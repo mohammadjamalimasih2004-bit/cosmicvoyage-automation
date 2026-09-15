@@ -14,7 +14,8 @@ API_KEY = os.environ.get("OPENROUTER_API_KEY")
 META_FILE = os.path.join(OUTPUT_DIR, "meta.json")
 CAPTION_FILE = os.path.join(OUTPUT_DIR, "caption.json")
 
-MODEL = "deepseek/deepseek-chat-v3-0324:free"
+MODEL = "inclusionai/ling-3.0-flash-vl:free"
+
 
 SYSTEM_PROMPT = (
     "تو یک متخصص سوشال مدیا و نجوم هستی. فقط خروجی JSON بده، بدون هیچ متن اضافه، "
