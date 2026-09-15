@@ -1,0 +1,71 @@
+name: CosmicVoyage Weekly Reel
+
+on:
+  schedule:
+    - cron: "30 6 * * 6"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "اجرای آزمایشی بدون پابلیش نهایی"
+        type: boolean
+        default: false
+  repository_dispatch:
+    types: [trigger-weekly-post]
+
+jobs:
+  build-and-post:
+    runs-on: ubuntu-latest
+    env:
+      OUTPUT_DIR: output
+      PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      IG_BUSINESS_ID: ${{ secrets.IG_BUSINESS_ID }}
+      IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: نصب پایتون
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: نصب ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: نصب وابستگی‌ها
+        run: pip install -r requirements.txt
+      - name: دانلود ویدیو از NASA
+        run: python scripts/fetch_nasa.py
+      - name: تست مرحله دانلود
+        run: python scripts/run_tests.py --stage fetch
+      - name: دانلود موزیک
+        run: python scripts/fetch_music.py || echo "بدون موزیک ادامه می‌دهیم"
+        continue-on-error: true
+      - name: ادیت ویدیو با ffmpeg
+        run: python scripts/edit_video.py
+      - name: تست مرحله ادیت
+        run: python scripts/run_tests.py --stage edit
+      - name: تولید کپشن با AI
+        run: python scripts/generate_caption.py
+      - name: تست مرحله کپشن
+        run: python scripts/run_tests.py --stage caption
+      - name: آپلود ویدیو به GitHub Release (برای دسترسی عمومی)
+        id: upload
+        run: |
+          TAG="reel-$(date +%Y%m%d-%H%M%S)"
+          gh release create "$TAG" output/final.mp4 --title "$TAG" --notes "Automated weekly reel"
+          URL=$(gh release view "$TAG" --json assets -q '.assets[0].url')
+          echo "PUBLIC_VIDEO_URL=$URL" >> "$GITHUB_ENV"
+      - name: پیش‌نمایش نهایی قبل از پابلیش (preflight)
+        run: python scripts/run_tests.py --stage preflight
+      - name: پابلیش در اینستاگرام
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: python scripts/post_instagram.py
+      - name: آپلود artifact برای بررسی دستی
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: weekly-reel-output
+          path: |
+            output/final.mp4
+            output/caption.json
+            output/meta.json
+          retention-days: 14
