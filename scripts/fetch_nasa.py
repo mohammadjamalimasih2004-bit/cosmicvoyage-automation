@@ -43,8 +43,8 @@ def search_nasa_videos(topic):
     return data.get("collection", {}).get("items", [])
 
 def get_video_asset_url(nasa_id):
-    asset_url = f"https://images-api.nasa.gov/asset/{nasa_id}"
-    with urllib.request.urlopen(asset_url, timeout=30) as resp:
+    asset_url = f"https://images-api.nasa.gov/asset/{urllib.parse.quote(nasa_id, safe='')}"
+  with urllib.request.urlopen(asset_url, timeout=30) as resp:
         data = json.loads(resp.read().decode())
     items = data.get("collection", {}).get("items", [])
     mp4_candidates = [i["href"] for i in items if i["href"].endswith(".mp4")]
