@@ -43,8 +43,9 @@ def search_nasa_videos(topic):
     return data.get("collection", {}).get("items", [])
 
 def get_video_asset_url(nasa_id):
-    asset_url = f"https://images-api.nasa.gov/asset/{urllib.parse.quote(nasa_id, safe='')}"
-  with urllib.request.urlopen(asset_url, timeout=30) as resp:
+    safe_id = urllib.parse.quote(nasa_id, safe='')
+    asset_url = f"https://images-api.nasa.gov/asset/{safe_id}"
+    with urllib.request.urlopen(asset_url, timeout=30) as resp:
         data = json.loads(resp.read().decode())
     items = data.get("collection", {}).get("items", [])
     mp4_candidates = [i["href"] for i in items if i["href"].endswith(".mp4")]
@@ -52,7 +53,6 @@ def get_video_asset_url(nasa_id):
         return None
     mp4_candidates.sort(key=lambda h: ("orig" not in h and "large" not in h))
     raw_url = mp4_candidates[0]
-    # لینک‌های ناسا گاهی فاصله یا کاراکتر خاص دارن که پایتون قبول نمی‌کند
     parts = urllib.parse.urlsplit(raw_url)
     safe_path = urllib.parse.quote(parts.path)
     return urllib.parse.urlunsplit((parts.scheme, parts.netloc, safe_path, parts.query, parts.fragment))
