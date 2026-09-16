@@ -44,11 +44,12 @@ def main():
     clip_len = min(MAX_DURATION, duration)
     has_music = os.path.exists(MUSIC)
 
-    vf = (
-        "crop='min(iw,ih*9/16)':'min(ih,iw*16/9)',"
+        vf = (
         "scale=1080:1920:force_original_aspect_ratio=increase,"
-        "crop=1080:1920"
+        "crop=1080:1920,"
+        "setsar=1"
     )
+
 
     if has_music:
         cmd = (
